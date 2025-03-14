@@ -30,7 +30,7 @@ const router = createRouter({
 // 路由守卫 未登录时 拦截到登录页
 router.beforeEach((to) => {
   const userStore = useUserStore()
-  if (!userStore.token && to.path !== '/login') return '/login'
+  if (!userStore.userInfo.token && to.path !== '/login' && userStore.userInfo.role !== 'admin') return '/login'
 })
 
 export default router

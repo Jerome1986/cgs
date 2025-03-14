@@ -1,12 +1,13 @@
 <script setup>
 import { ref } from 'vue'
-import router from '@/router/index.js'
 import { User, Lock } from '@element-plus/icons-vue'
 import { userLogin } from '@/api/login.js'
 import { useUserStore } from '@/stores/index.js'
 import { ElMessage } from 'element-plus'
+import { useRouter } from 'vue-router'
 
 const userStore = useUserStore()
+const router = useRouter()
 // 表单
 const form = ref()
 // 用户表单初始数据
@@ -30,19 +31,18 @@ const rules = ref({
 // 提交表单
 const submitForm = async () => {
   await form.value.validate()
-  console.log('submit!', userForm.value)
-  const res = await userLogin(userForm.value)
-  console.log(res)
-  userStore.setToken(res.data.token)
-  userStore.setUserInfo({
-    username: res.data.username,
-    role: res.data.role,
-    userAvatarUrl: res.data.userAvatarUrl
-  })
-  ElMessage.success('登录成功')
-  setTimeout(() => {
-    router.push('/')
-  }, 500)
+  try {
+    const res = await userLogin(userForm.value)
+    console.log(res)
+    userStore.setUserInfo(res.data)
+    if (userStore.userInfo.role !== 'admin') {
+      return { code: 401, message: '当前用户没有权限' }
+    }
+    ElMessage.success('登录成功')
+  } catch (err) {
+    console.log(err, '我是错误')
+  }
+  await router.push('/')
 }
 </script>
 

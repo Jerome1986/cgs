@@ -14,13 +14,10 @@ import request from '@/utils/request'
 export const userLogin = (userinfo) => {
   return request({
     method: 'post',
-    url: '/login/login',
+    url: '/user-login',
     data: {
       username: userinfo.username,
       password: userinfo.password
-    },
-    headers: {
-      'Content-Type': 'multipart/form-data'
     }
   })
 }
