@@ -1,0 +1,1 @@
+import{i as a}from"./request-CjAdyTqz.js";const d=(t,e,r)=>a.get("/material-get",{params:{pagesNum:t,pagesSize:e,materialType:r}}),o=t=>a.post("/material-add",t),l=t=>a.put("/material-update",t),n=t=>a.delete("/material-deleted",{params:{material_id:t}});export{o as a,d as g,n as r,l as u};

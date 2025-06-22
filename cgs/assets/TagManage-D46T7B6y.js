@@ -1,0 +1,1 @@
+import{_ as o}from"./_plugin-vue_export-helper-DlAUqK2U.js";import{X as t,b as a,t as c,o as r}from"./index-Dq5YoMTe.js";const n={},s={class:"tagManage"};function _(d,i){const e=c("router-view");return r(),t("div",s,[a(e)])}const f=o(n,[["render",_],["__scopeId","data-v-c23a24b3"]]);export{f as default};

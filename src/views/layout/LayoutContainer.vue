@@ -1,5 +1,6 @@
 <script setup>
 import {
+  Coin,
   CaretBottom,
   Collection,
   Crop,
@@ -8,7 +9,10 @@ import {
   EditPen,
   ShoppingBag,
   SwitchButton,
-  User
+  User,
+  CollectionTag,
+  PriceTag,
+  Cloudy
 } from '@element-plus/icons-vue'
 import { ref } from 'vue'
 import { ElMessageBox } from 'element-plus'
@@ -73,9 +77,29 @@ const loginOut = () => {
             <span>二级分类</span>
           </el-menu-item>
         </el-sub-menu>
+        <!--标签管理-->
+        <el-sub-menu index="/tagManage">
+          <template #title>
+            <el-icon><CollectionTag /></el-icon>
+            <span>标签管理</span>
+          </template>
+          <el-menu-item index="/tagManage/tag">
+            <el-icon><PriceTag /></el-icon>
+            <span>属性标签</span>
+          </el-menu-item>
+          <el-menu-item index="/tagManage/color">
+            <el-icon><Cloudy /></el-icon>
+            <span>颜色标签</span>
+          </el-menu-item>
+        </el-sub-menu>
         <!--商品管理-->
-        <el-menu-item index="/product">
+        <el-menu-item index="/material">
           <el-icon><ShoppingBag /></el-icon>
+          <span>素材管理</span>
+        </el-menu-item>
+        <!--会员商品-->
+        <el-menu-item index="/vip">
+          <el-icon><Coin /></el-icon>
           <span>商品管理</span>
         </el-menu-item>
         <!--订单管理-->

@@ -2,7 +2,7 @@
 import { ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import { useCateStore } from '@/stores/index.js'
-import { addCategory, updateCategory } from '@/api/cate.js'
+import { addSubCategory, updateCategory } from '@/api/cate.js'
 
 const dialogVisible = ref(false)
 
@@ -40,12 +40,12 @@ const handleParentChange = (selectedValue) => {
 }
 
 // 所属类型
-const optionsType = ref([
-  { value: '模型', label: '模型' },
-  { value: '贴图', label: '贴图' },
-  { value: '材质', label: '材质' },
-  { value: '灯光', label: '灯光' }
-])
+// const optionsType = ref([
+//   { value: '模型', label: '模型' },
+//   { value: '贴图', label: '贴图' },
+//   { value: '材质', label: '材质' },
+//   { value: '灯光', label: '灯光' }
+// ])
 
 // 表单规则
 const rules = ref([])
@@ -84,16 +84,23 @@ const formRef = ref(null)
 const onSubmit = async () => {
   await formRef.value.validate()
   console.log('提交前', formModel.value)
-
+  // 构建二级分类数据
+  const params = {
+    sub_id: formModel.value._id,
+    parent_id: formModel.value.parent_id,
+    name: formModel.value.name,
+    en_name: formModel.value.en_name,
+    type: formModel.value.type
+  }
   // 根据 _id 判断是添加还是编辑
   if (formModel.value._id) {
-    await updateCategory(formModel.value) // 编辑
+    await updateCategory(params) // 编辑
     ElMessage({
       type: 'success',
       message: '更新成功'
     })
   } else {
-    await addCategory(formModel.value) // 添加
+    await addSubCategory(params) // 添加
     ElMessage({
       type: 'success',
       message: '添加成功'
@@ -117,6 +124,7 @@ const onSubmit = async () => {
         </el-form-item>
         <el-form-item label="所属父级" prop="cate_alias">
           <el-select
+            :disabled="true"
             @change="handleParentChange"
             v-model="formModel.parent_id"
             placeholder="Select"
@@ -125,11 +133,11 @@ const onSubmit = async () => {
             <el-option v-for="item in optionsCate" :key="item.value" :label="item.label" :value="item.value" />
           </el-select>
         </el-form-item>
-        <el-form-item label="所属类型" prop="cate_alias">
-          <el-select v-model="formModel.type" placeholder="Select" style="width: 100px">
-            <el-option v-for="item in optionsType" :key="item.value" :label="item.label" :value="item.value" />
-          </el-select>
-        </el-form-item>
+        <!--        <el-form-item label="所属类型" prop="cate_alias">-->
+        <!--          <el-select v-model="formModel.type" placeholder="Select" style="width: 100px">-->
+        <!--            <el-option v-for="item in optionsType" :key="item.value" :label="item.label" :value="item.value" />-->
+        <!--          </el-select>-->
+        <!--        </el-form-item>-->
       </el-form>
       <template #footer>
         <span class="dialog-footer">

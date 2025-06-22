@@ -20,8 +20,18 @@ const router = createRouter({
             { path: '/cate/subcate', component: () => import('@/views/cate/subcate/SubCate.vue') }
           ]
         },
-        { path: '/product', component: () => import('@/views/product/Product.vue') },
-        { path: '/orderManage', component: () => import('@/views/orderManage/OrderManage.vue') }
+        {
+          path: '/tagManage',
+          component: () => import('@/views/tagManage/TagManage.vue'),
+          children: [
+            { path: '/tagManage/tag', component: () => import('@/views/tagManage/attribute/AttributeTag.vue') },
+            { path: '/tagManage/color', component: () => import('@/views/tagManage/color/ColorTag.vue') }
+          ]
+        },
+        { path: '/material', component: () => import('@/views/material/MaterialView.vue') },
+        { path: '/vip', component: () => import('@/views/vipPro/VipPro.vue') },
+        { path: '/orderManage', component: () => import('@/views/orderManage/OrderManage.vue') },
+        { path: '/manySend', component: () => import('@/views/manySend/ManySend.vue') }
       ]
     }
   ]

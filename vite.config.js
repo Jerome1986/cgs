@@ -18,7 +18,10 @@ export default defineConfig({
       resolvers: [ElementPlusResolver()]
     })
   ],
-  base: '/yx',
+  base: '/cgs/',
+  build: {
+    outDir: 'cgs'
+  },
   server: {
     port: 5174 // 修改为其他端口，比如 5174
   },

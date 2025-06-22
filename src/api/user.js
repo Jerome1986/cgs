@@ -74,6 +74,6 @@ export const deleteUser = (id) => {
  * @returns {Promise<Object>} - 返回一个Promise，resolve时为所有用户数据列表
  */
 
-export const getAllusers = () => {
+export const getAllUsers = () => {
   return request.get('/user-search-get')
 }

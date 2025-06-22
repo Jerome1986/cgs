@@ -1,40 +1,46 @@
 import request from '@/utils/request.js'
 
 /**
- * @typedef {Object} cateModel - 分类信息
- * @property {string} _id -当前分类的id
- * @property {string} name - 分类名称
- * @property {string} en_name - 分类英文名
- * @property {string|null} parent_id - 父级分类ID，如果没有父级则为null
- * @property {string|null } parent_name -父级名称
- * @property {string} type - 分类所属类型（例如：模型分类、贴图分类等）
- */
-
-/**
- * 获取所有分类
+ * @param {number} pagesNum - 当前页码
+ * @param {number} pagesSize - 每页条数
  * @returns {Promise<Array<cateModel>>} - 返回一个Promise，resolve时为分类列表
  */
-export const getCategoryList = () => {
+
+export const getAllCategoryList = (pagesNum, pagesSize) => {
+  return request.get('/cate-get', { params: { pagesNum, pagesSize } })
+}
+
+/**
+ * 根据类型查询分类
+ * @param {string} pageType 素材类型
+ * @returns {Promise<Array<cateModel>>} - 返回一个Promise，resolve时为分类列表
+ */
+
+export const typeGetCategoryList = (pageType) => {
+  return request.get('/cate-type-get', { params: { pageType } })
+}
+
+/**
+ * 添加一级分类 addCategory
+ * @param {cateModel} cateInfo - 分类信息对象
+ * @returns {Promise<string>} - 返回一个Promise，resolve时为分类ID（cate_id）
+ */
+export const addTopCategory = (cateInfo) => {
   return request({
-    url: '/cate/cateModelGet',
-    method: 'post'
+    url: '/cate-add-topLevel',
+    method: 'post',
+    data: cateInfo
   })
 }
 
 /**
- * 添加分类 addCategory
+ * 添加二级分类
  * @param {cateModel} cateInfo - 分类信息对象
  * @returns {Promise<string>} - 返回一个Promise，resolve时为分类ID（cate_id）
  */
-export const addCategory = (cateInfo) => {
-  return request({
-    url: '/cate/addCategory',
-    method: 'post',
-    data: cateInfo,
-    headers: {
-      'Content-Type': 'multipart/form-data'
-    }
-  })
+
+export const addSubCategory = (cateInfo) => {
+  return request.post('/cate-add-sub', cateInfo)
 }
 
 /**
@@ -44,22 +50,26 @@ export const addCategory = (cateInfo) => {
  */
 
 export const updateCategory = (cateInfo) => {
-  return request({
-    url: '/cate/updateCate',
-    method: 'post',
-    data: cateInfo,
-    headers: {
-      'Content-Type': 'multipart/form-data'
-    }
-  })
+  return request.put('/cate-update', cateInfo, { headers: { 'Content-Type': 'application/json' } })
 }
 
 /**
- * 移除当前分类 removeCategory
- * @param {string} cate_id -要删除的分类id
+ * 移除当前一级分类 removeTopCategory
+ * @param {string} top_id - 要删除的一级分类id
  * @returns {Promise<number>} - 返回一个Promise，resolve时为成功状态码 200
  */
 
-export const removeCategory = (cate_id) => {
-  return request.post('/cate/removeCategory', { cate_id }, { headers: { 'Content-Type': 'multipart/form-data' } })
+export const removeTopCategory = (top_id) => {
+  return request.delete('/cate-deleted', { params: { top_id } })
+}
+
+/**
+ * 移除当前二级分类 removeSubCategory
+ * @param {string} parent_id - 一级分类id
+ * @param {string} sub_id - 二级分类id
+ * @returns {Promise<number>} - 返回一个Promise，resolve时为成功状态码 200
+ */
+
+export const removeSubCategory = (parent_id, sub_id) => {
+  return request.delete('/cate-deleted', { params: { parent_id, sub_id } })
 }

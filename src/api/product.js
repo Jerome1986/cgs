@@ -1,50 +1,43 @@
-import request from '@/utils/request'
+import request from '@/utils/request.js'
 
 /**
- * @typedef {Object} proModel - 分类信息
- * @property {string} _id -当前商品的id
- * @property {string} name - 商品名称
- * @property {string} en_name - 商品英文名
- * @property {Array} cate_path - 商品所属分类的路径，如（家具/桌子）
- * @property {string} thumb -缩略图/封面图
- * @property {string} model_url - 商品对应的文件下载路径，如（模型文件，贴图文件等）
- * @property {Array} tags - 商品标签
- * @property {Array} colors - 颜色属性 如：#ff0000
- * @property {number} status -商品状态 0-下架 1-商家
+ * 获取所有产品/根据类型来获取产品数据
+ * @param {number} pagesNumber - 页码
+ * @param {number} pagesSize - 每页条数
+ * @param {string} productType - 产品的类型
+ * @returns {Promise<Array<productModel>>} - 返回一个Promise，resolve时为分类列表
  */
 
-/**
- * 获取所有分类
- * @returns {Promise<Array<proModel>>}   - 返回一个Promise，resolve时为所有商品列表
- */
-
-export const getAllProducts = () => {
-  return request.get('/product/getProListAll')
+export const getProductList = (pagesNumber, pagesSize, productType) => {
+  return request.get('/products-get', { params: { pagesNumber, pagesSize, productType } })
 }
 
 /**
- * 添加商品
- * @param {proModel} productInfo - 商品信息
- * @returns {Promise<string>} - 返回一个Promise，resolve时为商品ID
+ * 添加产品
+ * @param {productModel} productInfo - 传递的产品信息
+ * @returns {Promise<resultModel>}  - 返回一个Promise，resolve时 成功状态和商品id
  */
+
 export const addProduct = (productInfo) => {
-  // ... 实现代码
+  return request.post('/products-add', productInfo)
 }
 
 /**
- * 更新商品
- * @param {proModel} productInfo - 商品信息
- * @returns {Promise<number>} - 返回一个Promise，resolve时为成功状态码
+ * 删除指定产品
+ * @param {string} id - 要删除产品的id
+ * @returns {Promise<resultModel>} - 返回一个Promise,resolve时，成功状态
  */
-export const updateProduct = (productInfo) => {
-  // ... 实现代码
+
+export const deleteProduct = (id) => {
+  return request.delete('/products-delete', { params: { id } })
 }
 
 /**
- * 删除商品
- * @param {string} product_id - 商品ID
- * @returns {Promise<number>} - 返回一个Promise，resolve时为成功状态码
+ * 更新指定产品
+ * @param {Object} data - 要更新的信息对象
+ * @param {Promise<resultModel>} - 返回一个Promise,resolve时，成功状态
  */
-export const removeProduct = (product_id) => {
-  // ... 实现代码
+
+export const updateProduct = (data) => {
+  return request.put('/products-update', data)
 }

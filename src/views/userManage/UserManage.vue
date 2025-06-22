@@ -4,7 +4,7 @@ import ChannelUserEdit from '@/views/userManage/components/ChannelUserEdit.vue'
 import { ref, onMounted, watch } from 'vue'
 import { Delete, Edit, Search } from '@element-plus/icons-vue'
 import { formatTime } from '@/utils/formatTime.js'
-import { changeUserStatus, deleteUser, getAllusers, userInfoGetAll } from '@/api/user.js'
+import { changeUserStatus, deleteUser, getAllUsers, userInfoGetAll } from '@/api/user.js'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useUserStore } from '@/stores/index.js'
 import { useRouter } from 'vue-router'
@@ -44,7 +44,7 @@ const userListGet = async () => {
 
 // 获取所有用户数据（用于搜索）
 const fetchAllUserList = async () => {
-  const res = await getAllusers()
+  const res = await getAllUsers()
   allUserList.value = res.data
 }
 

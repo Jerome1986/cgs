@@ -1,7 +1,8 @@
 <script setup>
 import { ref } from 'vue'
 import { ElMessage } from 'element-plus'
-import { addCategory, updateCategory } from '@/api/cate.js'
+import { addTopCategory, updateCategory } from '@/api/cate.js'
+
 const dialogVisible = ref(false)
 // 准备数据和校验规则
 const formModel = ref({
@@ -67,14 +68,15 @@ const formRef = ref(null)
 // 提交表单
 const onSubmit = async () => {
   await formRef.value.validate()
+  // 构建一级分类更新参数
   const params = {
+    top_id: formModel.value._id,
     name: formModel.value.name,
     en_name: formModel.value.en_name,
     type: formModel.value.type
   }
-  console.log('参数', formModel.value._id, params)
-  if (formModel.value._id) await updateCategory(formModel.value)
-  if (!formModel.value._id) await addCategory(formModel.value)
+  if (formModel.value._id) await updateCategory(params)
+  if (!formModel.value._id) await addTopCategory(formModel.value)
   ElMessage({
     type: 'success',
     message: formModel.value._id ? '更新成功' : '添加成功'

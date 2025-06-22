@@ -33,10 +33,27 @@ instance.interceptors.response.use(
   },
 
   (err) => {
-    ElMessage({ message: err.response.data.message || '服务异常', type: 'error' })
-    if (err.response?.code === 401) {
+    // 处理网络错误、超时等情况
+    if (!err.response) {
+      ElMessage({ 
+        message: err.message === 'Network Error' 
+          ? '网络连接失败，请检查网络' 
+          : (err.message || '请求失败'), 
+        type: 'error' 
+      })
+      
+      console.error('请求错误:', err)
+      return Promise.reject(err)
+    }
+    
+    // 处理服务器返回的错误
+    ElMessage({ message: err.response.data?.message || '服务异常', type: 'error' })
+    
+    // 处理 401 未授权错误
+    if (err.response.status === 401) {
       router.push('/login')
     }
+    
     return Promise.reject(err)
   }
 )
