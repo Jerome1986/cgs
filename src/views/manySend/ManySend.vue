@@ -359,87 +359,95 @@ const handleSend = async (isRetry = false) => {
     // 关闭加载指示器
     loadingInstance.close()
 
-    // 显示上传结果
-    if (uploadStatus.value.failed === 0) {
-      ElMessage.success(`所有 ${uploadStatus.value.total} 个文件上传成功！`)
-
-      // ==========================================
-      // 这里处理上传成功后的发布逻辑
-      // ==========================================
-      console.log('处理发布逻辑')
-
-      // 可以使用 uploadResults 数组中的数据来处理发布
-      // uploadResults 包含了每个文件的上传结果，包括文件名、文件夹名和URL
-      console.log('上传结果:', uploadResults)
-
-      // 按文件夹分组处理发布
-      const folderGroups = {}
-      uploadResults.forEach(result => {
-        if (result.success) {
-          if (!folderGroups[result.folderName]) {
-            folderGroups[result.folderName] = []
-          }
-          folderGroups[result.folderName].push(result)
-        }
-      })
-
-      // 对每个文件夹进行发布处理
-      for (const [folderName, results] of Object.entries(folderGroups)) {
-        console.log(`处理文件夹 ${folderName} 的发布逻辑`, results)
-
-        try {
-          // 找出最合适的封面图
-          const coverFile = findBestCoverImage(results)
-
-          // 构建素材对象，按照后端要求的格式
-          const materialData = {
-            name: folderName,  // 使用文件夹名称作为素材名称
-            cover_url: coverFile.url, // 使用选出的封面图
-            files_url: results
-              .filter(result => result !== coverFile) // 排除封面图
-              .map(result => result.url), // 只包含素材文件的URL
-            top_id: selectedTopCateId.value, // 一级分类ID
-            sub_id: selectedSubCateId.value || '', // 二级分类ID
-            type: pageType.value, // 素材类型
-            tags: [], // 标签，默认为空数组
-            colors: [], // 颜色，默认为空数组
-            status: 1 // 默认上架
-          }
-
-          console.log('提交的素材数据:', materialData)
-
-          // 调用添加素材API
-          const response = await addMaterial(materialData)
-          console.log(`文件夹 ${folderName} 发布成功:`, response)
-
-        } catch (error) {
-          console.error(`文件夹 ${folderName} 发布失败:`, error)
-          ElMessage.error(`文件夹 ${folderName} 发布失败: ${error.message || '未知错误'}`)
-        }
-      }
-
-      ElMessage.success('所有文件已上传并发布成功！')
-      // ==========================================
-
-    } else {
-      ElMessage.warning(`上传完成，成功 ${uploadStatus.value.success} 个，失败 ${uploadStatus.value.failed} 个`)
-    }
-
-    // 清空上传队列和失败列表
-    uploadQueue.value = []
-    failedUploads.value = []
-
-    // 上传完成后清空文件列表
-    fileList.value = []
-
-    // 重置上传状态
+    // 重置上传状态，但保持失败记录
     uploadStatus.value.uploading = false
 
+    // 按文件夹分组处理发布
+    const folderGroups = {}
+    const failedFolders = new Set() // 记录失败的文件夹
+
+    // 先按文件夹分组
+    uploadResults.forEach(result => {
+      if (!folderGroups[result.folderName]) {
+        folderGroups[result.folderName] = {
+          files: [],
+          hasFailure: false
+        }
+      }
+      folderGroups[result.folderName].files.push(result)
+      if (!result.success) {
+        folderGroups[result.folderName].hasFailure = true
+        failedFolders.add(result.folderName)
+      }
+    })
+
+    // 处理每个文件夹的发布
+    let publishSuccessCount = 0
+    let publishFailCount = 0
+
+    for (const [folderName, group] of Object.entries(folderGroups)) {
+      // 如果文件夹中有失败的文件，跳过发布
+      if (group.hasFailure) {
+        publishFailCount++
+        continue
+      }
+
+      try {
+        // 找出最合适的封面图
+        const coverFile = findBestCoverImage(group.files)
+
+        // 构建素材对象
+        const materialData = {
+          name: folderName,
+          cover_url: coverFile.url,
+          files_url: group.files
+            .filter(result => result !== coverFile && result.success)
+            .map(result => result.url),
+          top_id: selectedTopCateId.value,
+          sub_id: selectedSubCateId.value || '',
+          type: pageType.value,
+          tags: [],
+          colors: [],
+          status: 1
+        }
+
+        // 调用添加素材API
+        await addMaterial(materialData)
+        publishSuccessCount++
+
+      } catch (error) {
+        console.error(`文件夹 ${folderName} 发布失败:`, error)
+        publishFailCount++
+        failedFolders.add(folderName)
+      }
+    }
+
+    // 显示最终结果
+    if (uploadStatus.value.failed === 0 && publishFailCount === 0) {
+      ElMessage.success(`所有 ${uploadStatus.value.total} 个文件上传并发布成功！`)
+      // 清空所有列表
+      uploadQueue.value = []
+      failedUploads.value = []
+      fileList.value = []
+    } else {
+      // 保持失败的文件在列表中
+      fileList.value = fileList.value.filter(file => {
+        const folderName = file.name.split('.')[0]
+        return failedFolders.has(folderName)
+      })
+
+      ElMessage.warning(
+        `上传完成：成功 ${uploadStatus.value.success} 个，失败 ${uploadStatus.value.failed} 个\n` +
+        `发布完成：成功 ${publishSuccessCount} 个文件夹，失败 ${publishFailCount} 个文件夹`
+      )
+    }
+
   } catch (error) {
-    // 用户取消上传
+    // 用户取消上传或其他错误
     if (error !== 'cancel') {
       ElMessage.error('上传过程中发生错误: ' + error.message)
     }
+    uploadStatus.value.uploading = false
   }
 }
 
@@ -506,11 +514,16 @@ onMounted(() => {
         </div>
 
         <!-- 失败文件重试按钮 -->
-        <div v-if="failedUploads.length > 0" class="retry-failed">
+        <div v-if="!uploadStatus.uploading && failedUploads.length > 0" class="retry-failed">
           <el-alert title="部分文件上传失败" type="warning" :closable="false" show-icon>
             <template #default>
               <div class="retry-content">
-                <span>有 {{ failedUploads.length }} 个文件上传失败</span>
+                <div class="failed-files">
+                  <div>失败文件列表：</div>
+                  <div v-for="(file, index) in failedUploads" :key="index" class="failed-file">
+                    {{ file.file.name }}
+                  </div>
+                </div>
                 <el-button type="primary" size="small" @click="retryFailedUploads">
                   重试失败文件
                 </el-button>
@@ -598,8 +611,19 @@ onMounted(() => {
         .retry-content {
           display: flex;
           justify-content: space-between;
-          align-items: center;
+          align-items: flex-start;
           margin-top: 8px;
+
+          .failed-files {
+            flex: 1;
+            margin-right: 16px;
+
+            .failed-file {
+              color: #f56c6c;
+              margin-top: 4px;
+              font-size: 13px;
+            }
+          }
         }
       }
 

@@ -1,1 +1,0 @@
-import{af as u,r as t}from"./index-Dq5YoMTe.js";const p=u("category",()=>{const r=t([]),o=e=>{r.value=e},s=t([]),n=e=>{s.value=e},a=t("");return{firstCate:r,setFirstCate:o,subCate:s,setSubCate:n,currentType:a,setCurrentType:e=>{a.value=e}}},{persist:!0});export{p as u};
