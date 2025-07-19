@@ -38,7 +38,7 @@ const total = ref(0)
 
 // 获取当前类型的一级分类
 const topCateGet = async () => {
-  const res = await typeGetCategoryList(pageType.value, params.value.pagesNum, params.value.pageSize)
+  const res = await typeGetCategoryList(pageType.value, 1, 99999)
   console.log('父级', res)
   topCategoryList.value = res.data.list
   cateStore.setFirstCate(topCategoryList.value)
