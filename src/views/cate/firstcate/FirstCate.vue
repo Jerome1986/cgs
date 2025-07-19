@@ -3,37 +3,41 @@ import PageContainer from '@/components/pageContainer.vue'
 import ChannelEdit from '@/views/cate/firstcate/components/ChannelEdit.vue'
 import ChannelSubAdd from '@/views/cate/firstcate/components/channel-subAdd.vue'
 import PageTypes from '@/components/pageTypes.vue'
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted } from 'vue'
 import { Delete, Edit, FolderAdd, Search } from '@element-plus/icons-vue'
-import { getAllCategoryList, removeTopCategory } from '@/api/cate.js'
+import { removeTopCategory, searchCategory, typeGetCategoryList } from '@/api/cate.js'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useCateStore } from '@/stores/index.js'
-import { usePageTypeStore } from '@/stores/mudules/pageTypes.js'
 
 // loading效果
 const loading = ref(false)
 // 分类状态管理
 const cateStore = useCateStore()
-const pageTypesStore = usePageTypeStore()
 // 弹窗
 const dialog = ref()
 const dialogSub = ref()
 // 分类初始数据
-const channelList = ref([])
+const cateList = ref([])
 const searchValue = ref('')
 
-// 构建数据
+// 构建分页数据
 const params = ref({
   pagesNum: 1,
   pageSize: 10
 })
-// 获取分类
+const total = ref(0)
+const pageType = ref('模型')
+// 添加一个标记是否在搜索状态的变量
+const isSearching = ref(false)
+
+// 获取一级分类
 const getCateList = async () => {
   loading.value = true
-  const res = await getAllCategoryList(params.value.pagesNum, params.value.pageSize)
+  const res = await typeGetCategoryList(pageType.value, params.value.pagesNum, params.value.pageSize)
   console.log('获取所有分类', res)
-  channelList.value = res.data.list
-  cateStore.setFirstCate(channelList.value)
+  cateList.value = res.data.list
+  total.value = res.data.total
+  cateStore.setFirstCate(cateList.value)
 
   loading.value = false
 }
@@ -41,60 +45,43 @@ const getCateList = async () => {
 // 接收子组件的下标
 const typeActiveIndex = ref(0)
 // 监听子组件切换类型
-const handleChange = (index) => {
+const handleChange = (index, itemType) => {
   typeActiveIndex.value = index
+  pageType.value = itemType
   // 重置到第一页
   params.value.pagesNum = 1
+  // 重置搜索值和搜索状态
+  searchValue.value = ''
+  isSearching.value = false
+  getCateList()
 }
 
-// 根据类型来渲染分类，移除分页逻辑
-const cateList = computed(() => {
-  return channelList.value.filter((item) => item.type === pageTypesStore.pageType[typeActiveIndex.value])
-})
-
-// 根据类型和搜索关键字来计算总数
-const total = computed(() => {
-  // 先按类型筛选
-  const typeFilteredList = channelList.value.filter(
-    (item) => item.type === pageTypesStore.pageType[typeActiveIndex.value]
-  )
-
-  // 如果没有搜索关键字，直接返回类型筛选后的总数
+// 处理查询按钮
+const handleSearch = async () => {
+  // 1.如果为空则根据当前类型来渲染
   if (!searchValue.value) {
-    return typeFilteredList.length
-  }
-
-  // 如果有搜索关键字，还需要按搜索条件筛选
-  const searchFilteredList = typeFilteredList.filter(
-    (item) =>
-      item.name.includes(searchValue.value) || item.en_name.toLowerCase().includes(searchValue.value.toLowerCase())
-  )
-
-  return searchFilteredList.length
-})
-
-// 添加一个计算属性来处理搜索结果和分页
-const filteredCateList = computed(() => {
-  // 确保 cateList 有值
-  if (!cateList.value) {
-    return []
-  }
-
-  // 先进行搜索过滤
-  let filteredList = cateList.value
-  if (searchValue.value) {
-    filteredList = cateList.value.filter(
-      (item) =>
-        item.name.includes(searchValue.value) || item.en_name.toLowerCase().includes(searchValue.value.toLowerCase())
+    isSearching.value = false
+    await getCateList()
+  } else {
+    // 2.如果有值则根据类型和搜索值来匹配
+    isSearching.value = true
+    const searchRes = await searchCategory(
+      pageType.value,
+      searchValue.value,
+      params.value.pagesNum,
+      params.value.pageSize
     )
+    cateList.value = searchRes.data.list
+    total.value = searchRes.data.total
   }
+}
 
-  // 然后对过滤后的结果进行分页
-  const startIndex = (params.value.pagesNum - 1) * params.value.pageSize
-  const endIndex = startIndex + params.value.pageSize
-
-  return filteredList.slice(startIndex, endIndex)
-})
+// 监听搜索值
+const changeSearch = () => {
+  if (!searchValue.value) {
+    getCateList()
+  }
+}
 
 // 点击添加一级分类
 const onAddChannel = () => {
@@ -134,11 +121,13 @@ const onDelChannel = (item) => {
 // 处理分页
 const handleCurrentChange = (page) => {
   params.value.pagesNum = page
+  getCateList()
 }
 
 const handleSizeChange = (size) => {
   params.value.pageSize = size
   params.value.pagesNum = 1 // 每页大小变化时，重置到第一页
+  getCateList()
 }
 
 // 监听子组件的提交事件
@@ -159,11 +148,13 @@ onMounted(() => {
       <!--   搜索   -->
       <div class="search">
         <el-input
+          @input="changeSearch"
           v-model="searchValue"
-          style="width: 240px; margin-right: 40px"
+          style="width: 240px; margin-right: 16px"
           placeholder="根据当前类型搜索分类"
           :suffix-icon="Search"
         />
+        <el-button type="primary" @click="handleSearch">查询</el-button>
       </div>
     </div>
     <template #extra>
@@ -172,8 +163,8 @@ onMounted(() => {
       </div>
     </template>
 
-    <el-table :data="filteredCateList" style="width: 100%" v-loading="loading">
-      <el-table-column label="序号" align="center" width="100" type="index"> </el-table-column>
+    <el-table :data="cateList" style="width: 100%" v-loading="loading">
+      <el-table-column label="序号" align="center" prop="sort" width="100"> </el-table-column>
       <el-table-column label="分类名称" align="center" prop="name"></el-table-column>
       <el-table-column label="分类英文" align="center" prop="en_name"></el-table-column>
       <el-table-column label="所属类型" align="center" prop="type"></el-table-column>
@@ -189,7 +180,7 @@ onMounted(() => {
       </template>
     </el-table>
     <!-- 页码 -->
-    <div style="margin-top: 20px">
+    <div style="margin-top: 20px" v-if="!isSearching">
       <el-pagination
         style="margin-top: 20px; justify-content: flex-end"
         v-model:current-page="params.pagesNum"

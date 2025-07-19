@@ -1,1 +1,0 @@
-import{_ as o}from"./_plugin-vue_export-helper-DlAUqK2U.js";import{X as t,b as c,t as r,o as s}from"./index-jHQwErwV.js";const a={},n={class:"cate"};function _(d,i){const e=r("router-view");return s(),t("div",n,[c(e)])}const f=o(a,[["render",_],["__scopeId","data-v-e3b54065"]]);export{f as default};

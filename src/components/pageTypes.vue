@@ -8,10 +8,10 @@ const emit = defineEmits(['changeType'])
 // 切换类型
 const changeType = (index, itemType) => {
   typeActiveIndex.value = index
-  // 设置一级分类当前选择的类型
+  // 设置分类当前选择的类型
   pageTypesStore.setCurrentType(itemType)
 
-  emit('changeType', typeActiveIndex.value)
+  emit('changeType', typeActiveIndex.value, itemType)
 }
 </script>
 

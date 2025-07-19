@@ -39,8 +39,9 @@ const getCategoryList = async (type) => {
 
   try {
     const res = await typeGetCategoryList(type)
-    topCateList.value = res.data
-    subCateList.value = res.data.flatMap((item) => item.subCategories || [])
+    console.log(res)
+    topCateList.value = res.data.list
+    subCateList.value = res.data.list.flatMap((item) => item.subCategories || [])
   } catch (error) {
     console.error('获取分类列表失败:', error)
     ElMessage.error('获取分类列表失败')
@@ -98,10 +99,7 @@ const rules = ref({
   top_id: [{ required: true, message: '请选择所属分类', trigger: 'change' }],
   sub_id: [{ message: '请选择所属子分类', trigger: 'change' }],
   name: [{ required: true, message: '请输入素材名称', trigger: 'blur' }],
-  en_name: [
-    { message: '请输入素材英文名称', trigger: 'blur' },
-    { min: 1, max: 30, message: '长度在 1 到 30 个字符', trigger: 'blur' }
-  ],
+  en_name: [{ message: '请输入素材英文名称', trigger: 'blur' }],
   cover_url: [{ required: true, message: '请上传封面图', trigger: 'change' }],
   files_url: [{ required: true, message: '请上传文件素材', trigger: 'change' }],
   type: [{ required: true, message: '请选择所属类型', trigger: 'change' }]
@@ -301,7 +299,12 @@ onMounted(() => {
         </el-form-item>
         <!--   一级分类     -->
         <el-form-item label="所属分类" prop="top_id">
-          <el-select @change="handleChangeCate" v-model="formModel.top_id" placeholder="请选择一级分类" style="width: 240px">
+          <el-select
+            @change="handleChangeCate"
+            v-model="formModel.top_id"
+            placeholder="请选择一级分类"
+            style="width: 240px"
+          >
             <el-option v-for="item in filterTypeTopCate" :key="item._id" :label="item.name" :value="item._id" />
           </el-select>
         </el-form-item>
@@ -320,9 +323,17 @@ onMounted(() => {
         <!--   封面图     -->
         <el-form-item label="封面图" prop="cover_url">
           <div class="upload-container">
-            <el-upload ref="uploadRef" action="https://etnrve3alw.gzg.sealos.run/material-upload-cover"
-              list-type="picture-card" :on-success="handleSuccess" :on-error="handleError"
-              :before-upload="beforeUploadCover" :on-exceed="handleExceed" :limit="1" :file-list="coverFileList">
+            <el-upload
+              ref="uploadRef"
+              action="https://etnrve3alw.gzg.sealos.run/material-upload-cover"
+              list-type="picture-card"
+              :on-success="handleSuccess"
+              :on-error="handleError"
+              :before-upload="beforeUploadCover"
+              :on-exceed="handleExceed"
+              :limit="1"
+              :file-list="coverFileList"
+            >
               <el-icon>
                 <Plus />
               </el-icon>
@@ -331,9 +342,15 @@ onMounted(() => {
         </el-form-item>
         <!--  上传文件    -->
         <el-form-item label="上传素材" prop="files_url">
-          <el-upload ref="uploadFileRef" action="https://etnrve3alw.gzg.sealos.run/material-upload-files"
-            :on-exceed="handleFilesExceed" :before-upload="beforeUploadFiles" :on-success="handleFilesSuccess"
-            :limit="1" :file-list="materialFileList">
+          <el-upload
+            ref="uploadFileRef"
+            action="https://etnrve3alw.gzg.sealos.run/material-upload-files"
+            :on-exceed="handleFilesExceed"
+            :before-upload="beforeUploadFiles"
+            :on-success="handleFilesSuccess"
+            :limit="1"
+            :file-list="materialFileList"
+          >
             <template #trigger>
               <el-button type="primary">选择文件</el-button>
             </template>
@@ -345,8 +362,13 @@ onMounted(() => {
         <!--   标签     -->
         <el-form-item label="标签" prop="tags">
           <div class="tags">
-            <div class="tagItem" v-for="item in tagOptions" :key="item._id" @click="handleSelectTag(item)"
-              :class="{ 'tag-selected': isTagSelected(item.name) }">
+            <div
+              class="tagItem"
+              v-for="item in tagOptions"
+              :key="item._id"
+              @click="handleSelectTag(item)"
+              :class="{ 'tag-selected': isTagSelected(item.name) }"
+            >
               {{ item.name }}
             </div>
           </div>
@@ -354,8 +376,14 @@ onMounted(() => {
         <!--   颜色     -->
         <el-form-item label="颜色" prop="colors">
           <div class="color-container">
-            <div class="colorItem" v-for="item in colorList" :key="item._id" @click="handleSelectColor(item)"
-              :class="{ 'color-selected': isColorSelected(item.color) }" :style="{ backgroundColor: item.color }"></div>
+            <div
+              class="colorItem"
+              v-for="item in colorList"
+              :key="item._id"
+              @click="handleSelectColor(item)"
+              :class="{ 'color-selected': isColorSelected(item.color) }"
+              :style="{ backgroundColor: item.color }"
+            ></div>
           </div>
         </el-form-item>
       </el-form>
@@ -371,7 +399,6 @@ onMounted(() => {
 
 <style scoped lang="scss">
 .proChannelAdd {
-
   /*属性标签*/
   .tags {
     display: flex;

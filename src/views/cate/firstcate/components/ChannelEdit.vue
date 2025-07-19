@@ -6,9 +6,11 @@ import { addTopCategory, updateCategory } from '@/api/cate.js'
 const dialogVisible = ref(false)
 // 准备数据和校验规则
 const formModel = ref({
+  _id: '',
   name: '',
   en_name: '',
-  type: ''
+  type: '',
+  sort: 1
 })
 // 下拉框的值
 const options = ref([
@@ -29,14 +31,8 @@ const rules = {
   en_name: [
     { required: true, message: '请输入分类英文', trigger: 'blur' },
     {
-      pattern: /^[a-zA-Z]+$/, // 只允许英文字母
-      message: '分类别名必须是纯英文，且长度为1-15位',
-      trigger: 'blur'
-    },
-    {
-      min: 1,
-      max: 15,
-      message: '分类别名长度必须在1到15个字符之间',
+      pattern: /^[a-zA-Z0-9\-_.&]+$/, // 允许字母、数字、- _ .
+      message: '分类别名只能包含英文字母、数字和 - _ . &',
       trigger: 'blur'
     }
   ],
@@ -56,6 +52,7 @@ const rules = {
   ]
 }
 const open = (row) => {
+  console.log('每一行', row)
   dialogVisible.value = true
   formModel.value = { ...row }
 }
@@ -73,7 +70,8 @@ const onSubmit = async () => {
     top_id: formModel.value._id,
     name: formModel.value.name,
     en_name: formModel.value.en_name,
-    type: formModel.value.type
+    type: formModel.value.type,
+    sort: Number(formModel.value.sort)
   }
   if (formModel.value._id) await updateCategory(params)
   if (!formModel.value._id) await addTopCategory(formModel.value)
@@ -91,21 +89,24 @@ const onSubmit = async () => {
     <el-dialog v-model="dialogVisible" :title="formModel._id ? '编辑分类' : '添加分类'" width="30%">
       <el-form ref="formRef" :model="formModel" :rules="rules" label-width="100px" style="padding-right: 30px">
         <el-form-item label="分类名称" prop="name">
-          <el-input v-model="formModel.name" minlength="1" maxlength="10"></el-input>
+          <el-input v-model="formModel.name" minlength="1"></el-input>
         </el-form-item>
-        <el-form-item label="分类英文" prop="cate_alias">
-          <el-input v-model="formModel.en_name" minlength="1" maxlength="15"></el-input>
+        <el-form-item label="分类英文" prop="en_name">
+          <el-input v-model="formModel.en_name" minlength="1"></el-input>
         </el-form-item>
-        <el-form-item label="所属类型" prop="cate_alias">
+        <el-form-item label="所属类型" prop="type">
           <el-select v-model="formModel.type" placeholder="Select" style="width: 100px">
             <el-option v-for="item in options" :key="item.value" :label="item.label" :value="item.value" />
           </el-select>
+        </el-form-item>
+        <el-form-item label="排序" prop="sort">
+          <el-input v-model="formModel.sort"></el-input>
         </el-form-item>
       </el-form>
       <template #footer>
         <span class="dialog-footer">
           <el-button @click="dialogVisible = false">取消</el-button>
-          <el-button type="primary" @click="onSubmit"> 确认 </el-button>
+          <el-button type="primary" @click="onSubmit">确认</el-button>
         </span>
       </template>
     </el-dialog>

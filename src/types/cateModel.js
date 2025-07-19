@@ -6,5 +6,6 @@
  * @property {string|null} parent_id - 父级分类ID，如果没有父级则为null
  * @property {string|null } parent_name -父级名称
  * @property {string} type - 分类所属类型（例如：模型分类、贴图分类等）
+ * @property {number} sort - 排序值
  * @property {Array} subCategories - 二级分类
  */

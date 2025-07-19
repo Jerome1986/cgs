@@ -1,23 +1,19 @@
 <script setup>
 import PageContainer from '@/components/pageContainer.vue'
 import SubChannelEdit from '@/views/cate/subcate/components/subChannelEdit.vue'
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, nextTick } from 'vue'
 import { Delete, Edit, Search } from '@element-plus/icons-vue'
-import { getAllCategoryList, removeSubCategory } from '@/api/cate.js'
+import { removeSubCategory, searchSubCategory, subCategoryByParentIdGet, typeGetCategoryList } from '@/api/cate.js'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { useCateStore } from '@/stores/index.js'
 import PageTypes from '@/components/pageTypes.vue'
-import { usePageTypeStore } from '@/stores/mudules/pageTypes.js'
+import { useCateStore } from '@/stores/index.js'
 
 // loading效果
 const loading = ref(false)
 const dialog = ref()
 
-// 分类状态管理
+// 状态管理
 const cateStore = useCateStore()
-const pageTypesStore = usePageTypeStore()
-// 二级分类初始数据
-const channelList = ref([])
 
 // 添加搜索相关
 const searchValue = ref('')
@@ -28,97 +24,136 @@ const params = ref({
   pageSize: 10
 })
 
-// 获取二级分类
-const subCateListGet = async () => {
-  loading.value = true
-  const res = await getAllCategoryList()
-  const tempArr = res.data.list
-  channelList.value = tempArr.flatMap((item) => item.subCategories)
-  console.log('二级分类', channelList.value)
-  cateStore.setSubCate(channelList.value)
-  loading.value = false
+// 添加一个标记是否在搜索状态的变量
+const isSearching = ref(false)
+
+// 一级分类初始数据
+const topCategoryList = ref([])
+const topCateActiveIndex = ref(0)
+const pageType = ref('模型')
+const topCateCurrentId = ref('')
+// 二级分类初始数据
+const subCategoryList = ref([])
+const total = ref(0)
+
+// 获取当前类型的一级分类
+const topCateGet = async () => {
+  const res = await typeGetCategoryList(pageType.value, params.value.pagesNum, params.value.pageSize)
+  console.log('父级', res)
+  topCategoryList.value = res.data.list
+  cateStore.setFirstCate(topCategoryList.value)
+  topCateCurrentId.value = topCategoryList.value[0]._id
+}
+
+// 根据一级分类id获取二级分类
+const subCateListGet = async (parentId) => {
+  const res = await subCategoryByParentIdGet(parentId, params.value.pagesNum, params.value.pageSize)
+  console.log('二级分类', res)
+  subCategoryList.value = res.data.list
+  params.value.pagesNum = res.data.pageNum
+  params.value.pageSize = res.data.pageSize
+  total.value = res.data.total
+}
+
+// 处理一级分类点击
+const handleChangeTopCate = async (item, index) => {
+  console.log(item)
+  topCateActiveIndex.value = index
+  topCateCurrentId.value = item._id
+  await subCateListGet(topCateCurrentId.value)
 }
 
 // 接收子组件的下标
 const typeActiveIndex = ref(0)
 // 监听子组件切换类型
-const handleChange = (index) => {
+const handleChange = async (index, itemType) => {
   typeActiveIndex.value = index
+  topCateActiveIndex.value = 0
+  pageType.value = itemType
   // 重置到第一页
   params.value.pagesNum = 1
+  // 重置搜索状态
+  searchValue.value = ''
+  isSearching.value = false
+  await topCateGet(itemType)
+  await nextTick(() => {
+    subCateListGet(topCateCurrentId.value)
+  })
 }
-
-// 根据类型来渲染分类
-const cateList = computed(() => {
-  return channelList.value.filter((item) => item.type === pageTypesStore.pageType[typeActiveIndex.value])
-})
-
-// 根据类型和搜索关键字来计算总数
-const total = computed(() => {
-  // 先按类型筛选
-  const typeFilteredList = channelList.value.filter(
-    (item) => item.type === pageTypesStore.pageType[typeActiveIndex.value]
-  )
-
-  // 如果没有搜索关键字，直接返回类型筛选后的总数
-  if (!searchValue.value) {
-    return typeFilteredList.length
-  }
-
-  // 如果有搜索关键字，还需要按搜索条件筛选
-  const searchFilteredList = typeFilteredList.filter(
-    (item) =>
-      item.name.includes(searchValue.value) || item.en_name.toLowerCase().includes(searchValue.value.toLowerCase())
-  )
-
-  return searchFilteredList.length
-})
-
-// 添加一个计算属性来处理搜索结果和分页
-const filteredCateList = computed(() => {
-  // 确保 cateList 有值
-  if (!cateList.value) {
-    return []
-  }
-
-  // 先进行搜索过滤
-  let filteredList = cateList.value
-  if (searchValue.value) {
-    filteredList = cateList.value.filter(
-      (item) =>
-        item.name.includes(searchValue.value) || item.en_name.toLowerCase().includes(searchValue.value.toLowerCase())
-    )
-  }
-
-  // 然后对过滤后的结果进行分页
-  const startIndex = (params.value.pagesNum - 1) * params.value.pageSize
-  const endIndex = startIndex + params.value.pageSize
-
-  return filteredList.slice(startIndex, endIndex)
-})
 
 // 添加分页处理方法
-const handleCurrentChange = (page) => {
+const handleCurrentChange = async (page) => {
+  console.log('页码改变:', page)
   params.value.pagesNum = page
+  if (isSearching.value) {
+    await handleSearch()
+  } else {
+    await subCateListGet(topCateCurrentId.value)
+  }
 }
 
-const handleSizeChange = (size) => {
+const handleSizeChange = async (size) => {
   params.value.pageSize = size
   params.value.pagesNum = 1 // 每页大小变化时，重置到第一页
+  if (isSearching.value) {
+    await handleSearch()
+  } else {
+    await subCateListGet(topCateCurrentId.value)
+  }
+}
+
+// 添加搜索处理
+const handleSearch = async () => {
+  if (!searchValue.value) {
+    isSearching.value = false
+    await subCateListGet(topCateCurrentId.value)
+    return
+  }
+
+  loading.value = true
+  try {
+    isSearching.value = true
+    console.log('搜索值改变:', searchValue.value)
+    const searchRes = await searchSubCategory(
+      pageType.value,
+      searchValue.value,
+      params.value.pagesNum,
+      params.value.pageSize
+    )
+    subCategoryList.value = searchRes.data.list
+    total.value = searchRes.data.total
+  } catch (error) {
+    console.error('搜索失败:', error)
+    ElMessage.error('搜索失败')
+  } finally {
+    loading.value = false
+  }
+}
+
+// 监听搜索值
+const changeSearch = () => {
+  if (!searchValue.value) {
+    subCateListGet(topCateCurrentId.value)
+  }
 }
 
 // 编辑
 const onEditChannel = async (item) => {
   console.log('编辑', item)
   dialog.value.open(item)
+  await subCateListGet(item.parent_id)
 }
+
 // 删除
 const onDelChannel = (item) => {
-  console.log('删除', item)
   ElMessageBox.confirm('确定要删除此分类吗?')
     .then(async () => {
       await removeSubCategory(item.parent_id, item._id)
-      await subCateListGet()
+      if (isSearching.value) {
+        await handleSearch() // 如果在搜索状态，重新搜索
+      } else {
+        await subCateListGet(item.parent_id) // 否则获取正常列表
+      }
       ElMessage.success('删除成功')
     })
     .catch(() => {
@@ -128,11 +163,20 @@ const onDelChannel = (item) => {
 
 // 监听成功事件
 const onSuccess = () => {
-  subCateListGet()
+  if (isSearching.value) {
+    handleSearch() // 如果在搜索状态，重新搜索
+  } else {
+    subCateListGet(topCateCurrentId.value) // 否则获取正常列表
+  }
 }
 
-onMounted(() => {
-  subCateListGet()
+onMounted(async () => {
+  if (pageType.value) {
+    await topCateGet(pageType.value)
+    await nextTick(() => {
+      subCateListGet(topCateCurrentId.value)
+    })
+  }
 })
 </script>
 
@@ -144,16 +188,31 @@ onMounted(() => {
       <!--   搜索   -->
       <div class="search">
         <el-input
+          @input="changeSearch"
           v-model="searchValue"
-          style="width: 240px; margin-right: 40px"
+          style="width: 240px; margin-right: 16px"
           placeholder="根据当前类型搜索分类"
           :suffix-icon="Search"
         />
+        <el-button type="primary" @click="handleSearch">查询</el-button>
       </div>
     </div>
 
-    <el-table :data="filteredCateList" style="width: 100%" v-loading="loading">
-      <el-table-column label="序号" align="center" width="100" type="index"> </el-table-column>
+    <!--  父级分类  -->
+    <div class="parentCate">
+      <div
+        class="parentItem"
+        :class="{ parentItemActive: topCateActiveIndex === index }"
+        v-for="(item, index) in topCategoryList"
+        :key="item._id"
+        @click="handleChangeTopCate(item, index)"
+      >
+        {{ item.name }}
+      </div>
+    </div>
+
+    <el-table :data="subCategoryList" style="width: 100%" v-loading="loading">
+      <el-table-column label="序号" align="center" prop="sort" width="100"> </el-table-column>
       <el-table-column label="分类名称" align="center" prop="name"></el-table-column>
       <el-table-column label="分类英文" align="center" prop="en_name"></el-table-column>
       <el-table-column label="所属父级" align="center" prop="parent_name"></el-table-column>
@@ -170,7 +229,7 @@ onMounted(() => {
     </el-table>
 
     <!-- 添加分页 -->
-    <div style="margin-top: 20px">
+    <div style="margin-top: 20px" v-if="!isSearching">
       <el-pagination
         style="margin-top: 20px; justify-content: flex-end"
         v-model:current-page="params.pagesNum"
@@ -208,6 +267,21 @@ onMounted(() => {
       .typeActive {
         background-color: #409eff;
       }
+    }
+  }
+  .parentCate {
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    .parentItem {
+      padding: 4px 8px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .parentItemActive {
+      border: 1px solid #409eff;
     }
   }
 }
