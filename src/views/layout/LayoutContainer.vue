@@ -107,6 +107,10 @@ const loginOut = () => {
           <el-icon><Collection /></el-icon>
           <span>订单管理</span>
         </el-menu-item>
+        <el-menu-item index="/watermark">
+          <el-icon><Collection /></el-icon>
+          <span>水印管理</span>
+        </el-menu-item>
       </el-menu>
     </el-aside>
     <!--顶部栏-->

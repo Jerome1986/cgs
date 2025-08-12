@@ -31,7 +31,8 @@ const router = createRouter({
         { path: '/material', component: () => import('@/views/material/MaterialView.vue') },
         { path: '/vip', component: () => import('@/views/vipPro/VipPro.vue') },
         { path: '/orderManage', component: () => import('@/views/orderManage/OrderManage.vue') },
-        { path: '/manySend', component: () => import('@/views/manySend/ManySend.vue') }
+        { path: '/manySend', component: () => import('@/views/manySend/ManySend.vue') },
+        {path:'/watermark', component: () => import('@/views/watermark/WatermarkManage.vue') },
       ]
     }
   ]
